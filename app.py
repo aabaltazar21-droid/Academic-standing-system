@@ -1,36 +1,71 @@
 import streamlit as st
+import pandas as pd
 
 
 class Student:
-
     def __init__(self, student_id, name):
         self.student_id = student_id
         self.name = name
 
-    def compute_final_grade(self, components):
+    def compute_final_grade(self, grades_df):
 
         final_grade = 0
+        breakdown = []
 
-        for component in components:
+        for _, row in grades_df.iterrows():
+
+            component = str(row["Component"]).strip()
+            weight = float(row["Weight (%)"])
+            score = str(row["Score"]).strip()
+            bonus = float(row["Bonus"])
+
+            if score == "":
+                raise ValueError(f"{component}: Score is empty.")
 
             try:
-                earned, total = component["fraction"].split("/")
 
-                earned = float(earned.strip())
-                total = float(total.strip())
+                if "/" in score:
+                    earned, total = score.split("/")
 
-                percentage = (earned / total) * 100
+                    earned = float(earned.strip())
+                    total = float(total.strip())
 
-                percentage += component["bonus"]
+                    if total <= 0:
+                        raise ValueError
 
-                contribution = percentage * component["weight"] / 100
+                    percentage = (earned / total) * 100
 
-                final_grade += contribution
+                else:
+                    percentage = float(score)
 
             except:
-                pass
+                raise ValueError(
+                    f"{component}: Invalid score format.\n"
+                    "Use examples like:\n"
+                    "45/50\n"
+                    "18/20\n"
+                    "90\n"
+                    "87.5"
+                )
 
-        return final_grade
+            percentage += bonus
+
+            contribution = percentage * weight / 100
+
+            final_grade += contribution
+
+            breakdown.append(
+                {
+                    "Component": component,
+                    "Score": score,
+                    "Percentage": round(percentage, 2),
+                    "Bonus": bonus,
+                    "Weight (%)": weight,
+                    "Contribution": round(contribution, 2),
+                }
+            )
+
+        return final_grade, pd.DataFrame(breakdown)
 
     def get_result(self, grade):
 
@@ -53,362 +88,384 @@ class Student:
 st.set_page_config(
     page_title="Academic Standing Status System",
     page_icon="🎓",
-    layout="wide"
+    layout="wide",
 )
 
 st.title("🎓 Academic Standing Status System")
-st.write("Customize your syllabus, enter scores as fractions (ex. 45/50), then generate an academic report.")
 
-# ---------------------------------------------------
+st.write(
+    "Create your own grading system or load the default syllabus."
+)
+
+st.divider()
+
+# -----------------------------
 # Student Information
-# ---------------------------------------------------
-
-st.header("Student Information")
+# -----------------------------
 
 student_id = st.text_input("Student ID")
 
 student_name = st.text_input("Student Name")
 
-# ---------------------------------------------------
-# Session State
-# ---------------------------------------------------
+st.divider()
 
-if "components" not in st.session_state:
-    st.session_state.components = []
+DEFAULT_SYLLABUS = pd.DataFrame(
+    {
+        "Component": [
+            "CO1",
+            "CO2",
+            "CO3",
+            "Coursera",
+            "Attendance",
+            "Seatwork",
+            "Final Exam",
+        ],
+        "Weight (%)": [
+            15,
+            15,
+            10,
+            10,
+            5,
+            15,
+            30,
+        ],
+    }
+)
 
-# ---------------------------------------------------
-# Syllabus Builder
-# ---------------------------------------------------
+if "syllabus" not in st.session_state:
+    st.session_state.syllabus = DEFAULT_SYLLABUS.copy()
 
-st.header("Syllabus Breakdown")
+# ==========================================================
+# SYLLABUS BUILDER
+# ==========================================================
+
+st.header("📚 Syllabus Builder")
 
 col1, col2 = st.columns(2)
 
 with col1:
-    if st.button("📋 Load Default Syllabus"):
-        st.session_state.components = [
-            {"name": "CO1", "weight": 15},
-            {"name": "CO2", "weight": 15},
-            {"name": "CO3", "weight": 10},
-            {"name": "Coursera", "weight": 10},
-            {"name": "Attendance / Recitation", "weight": 5},
-            {"name": "Seatwork / Homework", "weight": 15},
-            {"name": "Final Exam", "weight": 30},
-        ]
+
+    if st.button("📋 Load Default Syllabus", use_container_width=True):
+        st.session_state.syllabus = DEFAULT_SYLLABUS.copy()
+        st.rerun()
 
 with col2:
-    if st.button("🗑 Clear Syllabus"):
-        st.session_state.components = []
 
-st.subheader("Add a Custom Component")
+    if st.button("🗑 Clear Syllabus", use_container_width=True):
+        st.session_state.syllabus = pd.DataFrame(
+            columns=[
+                "Component",
+                "Weight (%)"
+            ]
+        )
+        st.rerun()
 
-col1, col2 = st.columns([3, 1])
+st.write(
+    """
+You may edit the syllabus directly.
 
-with col1:
-    component_name = st.text_input(
-        "Component Name",
-        placeholder="Example: Quiz 1"
+• Add rows
+
+• Delete rows
+
+• Change component names
+
+• Change weights
+
+The total weight does NOT have to equal 100% while editing.
+The report can only be generated once it reaches exactly 100%.
+"""
+)
+
+syllabus_df = st.data_editor(
+    st.session_state.syllabus,
+    hide_index=True,
+    use_container_width=True,
+    num_rows="dynamic",
+    column_config={
+        "Component": st.column_config.TextColumn(
+            "Component",
+            required=True,
+        ),
+        "Weight (%)": st.column_config.NumberColumn(
+            "Weight (%)",
+            min_value=0.0,
+            step=1.0,
+            format="%.2f",
+        ),
+    },
+    key="editor",
+)
+
+# ----------------------------------------------------------
+# CLEAN DATA
+# ----------------------------------------------------------
+
+syllabus_df = syllabus_df.dropna(how="all")
+
+syllabus_df["Component"] = (
+    syllabus_df["Component"]
+    .fillna("")
+    .astype(str)
+    .str.strip()
+)
+
+syllabus_df = syllabus_df[
+    syllabus_df["Component"] != ""
+]
+
+syllabus_df["Weight (%)"] = pd.to_numeric(
+    syllabus_df["Weight (%)"],
+    errors="coerce",
+).fillna(0)
+
+st.session_state.syllabus = syllabus_df.copy()
+
+# ----------------------------------------------------------
+# VALIDATION
+# ----------------------------------------------------------
+
+duplicate_components = syllabus_df[
+    "Component"
+].duplicated()
+
+if duplicate_components.any():
+
+    st.error(
+        "Duplicate component names were found.\n"
+        "Each component must have a unique name."
     )
 
-with col2:
-    component_weight = st.number_input(
-        "Weight (%)",
-        min_value=0.0,
-        max_value=100.0,
-        value=0.0,
-        step=1.0
+total_weight = syllabus_df["Weight (%)"].sum()
+
+st.subheader("Weight Summary")
+
+left, right = st.columns(2)
+
+with left:
+
+    st.metric(
+        "Current Total Weight",
+        f"{total_weight:.2f}%"
     )
 
-if st.button("➕ Add Component"):
+with right:
 
-    if component_name.strip() == "":
-        st.warning("Please enter a component name.")
+    if total_weight < 100:
 
-    else:
-
-        duplicate = False
-
-        for c in st.session_state.components:
-            if c["name"].lower() == component_name.lower():
-                duplicate = True
-                break
-
-        if duplicate:
-            st.warning("That component already exists.")
-
-        else:
-            st.session_state.components.append(
-                {
-                    "name": component_name,
-                    "weight": component_weight
-                }
-            )
-
-# ---------------------------------------------------
-# Display Current Components
-# ---------------------------------------------------
-
-if len(st.session_state.components) > 0:
-
-    st.subheader("Current Syllabus")
-
-    total_weight = 0
-
-    for i, component in enumerate(st.session_state.components, start=1):
-
-        st.write(
-            f"{i}. **{component['name']}** — {component['weight']}%"
+        st.warning(
+            f"Remaining Weight: {100-total_weight:.2f}%"
         )
 
-        total_weight += component["weight"]
+    elif total_weight > 100:
 
-    st.write(f"### Total Weight: **{total_weight:.1f}%**")
-
-    if total_weight == 100:
-        st.success("✔ Total weight equals 100%")
-
-    elif total_weight < 100:
-        st.warning(f"Add {100-total_weight:.1f}% more.")
+        st.error(
+            f"Exceeded by {total_weight-100:.2f}%"
+        )
 
     else:
-        st.error(f"Remove {total_weight-100:.1f}%.")
 
-else:
+        st.success("Perfect! Total weight is exactly 100%.")
 
-    st.info("Load the default syllabus or create your own components.")
+st.divider()
 
-# ---------------------------------------------------
-# Enter Grades
-# ---------------------------------------------------
+# ==========================================================
+# GRADE ENTRY
+# ==========================================================
 
-if len(st.session_state.components) > 0 and total_weight == 100:
+if len(st.session_state.syllabus) > 0:
 
-    st.header("Enter Grades")
+    st.header("📝 Enter Student Scores")
 
     st.info(
-        "Enter scores in the format Earned/Total (Example: 45/50 or 95/100).\n"
-        "Additional Points are added after converting the fraction to a percentage."
+        """
+The Score field accepts BOTH formats.
+
+Examples:
+• 45/50
+• 18/20
+• 90
+• 87.5
+• 105/100
+
+Bonus points are added AFTER the score is converted to a percentage.
+"""
     )
 
-    for component in st.session_state.components:
+    grades = []
 
-        st.subheader(component["name"])
+    for index, row in st.session_state.syllabus.iterrows():
+
+        component = row["Component"]
+        weight = row["Weight (%)"]
+
+        st.subheader(f"{component} ({weight:.2f}%)")
 
         col1, col2 = st.columns([3, 1])
 
         with col1:
 
-            component["fraction"] = st.text_input(
-                f'{component["name"]} Score',
-                placeholder="Example: 45/50",
-                key=f"fraction_{component['name']}"
+            score = st.text_input(
+                "Score",
+                placeholder="Examples: 45/50 or 90",
+                key=f"score_{index}"
             )
 
         with col2:
 
-            component["bonus"] = st.number_input(
-                "Additional Points",
+            bonus = st.number_input(
+                "Bonus",
                 value=0.0,
                 step=0.5,
-                key=f"bonus_{component['name']}"
+                key=f"bonus_{index}"
             )
 
+        # -----------------------------
         # Live Preview
-        if component["fraction"] != "":
+        # -----------------------------
+
+        if score.strip() != "":
 
             try:
 
-                earned, total = component["fraction"].split("/")
+                if "/" in score:
 
-                earned = float(earned.strip())
-                total = float(total.strip())
-
-                if total <= 0:
-                    st.error("Total score must be greater than zero.")
-                else:
-
-                    percentage = (earned / total) * 100
-                    percentage += component["bonus"]
-
-                    weighted = percentage * component["weight"] / 100
-
-                    st.success(
-                        f"Percentage: {percentage:.2f}%   |   "
-                        f"Weighted Contribution: {weighted:.2f}"
-                    )
-
-            except:
-
-                st.error("Please use the format: Earned/Total (Example: 45/50)")
-
-# ---------------------------------------------------
-# Generate Academic Report
-# ---------------------------------------------------
-
-    st.divider()
-
-    if st.button("📄 Generate Academic Report"):
-
-        if student_id.strip() == "" or student_name.strip() == "":
-            st.error("Please enter both the Student ID and Student Name.")
-
-        else:
-
-            valid = True
-
-            # Validate all fraction inputs
-            for component in st.session_state.components:
-
-                try:
-                    earned, total = component["fraction"].split("/")
+                    earned, total = score.split("/")
 
                     earned = float(earned.strip())
                     total = float(total.strip())
 
                     if total <= 0:
-                        valid = False
+                        raise Exception
 
-                except:
-                    valid = False
+                    percentage = (earned / total) * 100
 
-            if not valid:
+                else:
+
+                    percentage = float(score)
+
+                percentage += bonus
+
+                contribution = percentage * weight / 100
+
+                st.success(
+                    f"Percentage: {percentage:.2f}%   |   "
+                    f"Contribution: {contribution:.2f}"
+                )
+
+            except:
 
                 st.error(
-                    "One or more scores are invalid.\n\n"
-                    "Please use the format: Earned/Total\n\n"
-                    "Examples:\n"
-                    "- 45/50\n"
-                    "- 18/20\n"
-                    "- 95/100"
+                    "Invalid score. Examples:\n"
+                    "45/50\n"
+                    "18/20\n"
+                    "90"
                 )
 
+        grades.append(
+            {
+                "Component": component,
+                "Weight (%)": weight,
+                "Score": score,
+                "Bonus": bonus,
+            }
+        )
+
+        st.divider()
+
+    grades_df = pd.DataFrame(grades)
+
+else:
+
+    grades_df = pd.DataFrame()
+
+    st.info("Please create your syllabus first.")
+
+# ==========================================================
+# ACADEMIC REPORT
+# ==========================================================
+
+st.header("📊 Academic Report")
+
+can_generate = True
+
+# Validate Student Information
+if student_id.strip() == "":
+    can_generate = False
+
+if student_name.strip() == "":
+    can_generate = False
+
+# Validate syllabus
+if len(st.session_state.syllabus) == 0:
+    can_generate = False
+
+total_weight = st.session_state.syllabus["Weight (%)"].sum()
+
+if total_weight != 100:
+    can_generate = False
+
+if st.button(
+    "Generate Academic Report",
+    use_container_width=True,
+    disabled=not can_generate,
+):
+
+    try:
+
+        student = Student(student_id, student_name)
+
+        final_grade, breakdown = student.compute_final_grade(
+            grades_df
+        )
+
+        standing, letter = student.get_result(final_grade)
+
+        remark = (
+            "PASSED"
+            if final_grade >= 75
+            else "FAILED"
+        )
+
+        st.success("Academic Report Generated!")
+
+        st.divider()
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            st.metric(
+                "Final Grade",
+                f"{final_grade:.2f}%"
+            )
+
+            st.progress(
+                min(final_grade / 100, 1.0)
+            )
+
+        with col2:
+
+            st.write(f"**Student ID:** {student.student_id}")
+            st.write(f"**Student Name:** {student.name}")
+            st.write(f"**Letter Grade:** {letter}")
+            st.write(f"**Academic Standing:** {standing}")
+
+            if remark == "PASSED":
+                st.success(remark)
             else:
+                st.error(remark)
 
-                student = Student(student_id, student_name)
+        st.divider()
 
-                final_grade = student.compute_final_grade(
-                    st.session_state.components
-                )
+        st.subheader("Grade Breakdown")
 
-                standing, letter = student.get_result(final_grade)
+        st.dataframe(
+            breakdown,
+            use_container_width=True,
+            hide_index=True,
+        )
 
-                remark = (
-                    "PASSED"
-                    if final_grade >= 75
-                    else "FAILED"
-                )
+    except Exception as e:
 
-                st.divider()
-
-                st.header("📋 Academic Report")
-
-                st.metric(
-                    "Final Grade",
-                    f"{final_grade:.2f}"
-                )
-
-                if remark == "PASSED":
-                    st.success("PASSED")
-                else:
-                    st.error("FAILED")
-
-                st.write(f"**Student ID:** {student.student_id}")
-                st.write(f"**Student Name:** {student.name}")
-
-                st.write(f"**Letter Grade:** {letter}")
-                st.write(f"**Academic Standing:** {standing}")
-
-                st.divider()
-
-                st.subheader("Detailed Computation")
-
-                for component in st.session_state.components:
-
-                    earned, total = component["fraction"].split("/")
-
-                    earned = float(earned.strip())
-                    total = float(total.strip())
-
-                    percentage = (
-                        earned / total
-                    ) * 100
-
-                    percentage += component["bonus"]
-
-                    contribution = (
-                        percentage *
-                        component["weight"] /
-                        100
-                    )
-
-                    st.write(
-                        f"**{component['name']}**"
-                    )
-
-                    st.write(
-                        f"Score: {earned}/{total}"
-                    )
-
-                    st.write(
-                        f"Bonus: {component['bonus']:.2f}"
-                    )
-
-                    st.write(
-                        f"Percentage: {percentage:.2f}%"
-                    )
-
-                    st.write(
-                        f"Weight: {component['weight']}%"
-                    )
-
-                    st.write(
-                        f"Contribution: {contribution:.2f}"
-                    )
-
-                    st.divider()
-
-                st.subheader("Detailed Computation")
-
-                for component in st.session_state.components:
-
-                    earned, total = component["fraction"].split("/")
-
-                    earned = float(earned.strip())
-                    total = float(total.strip())
-
-                    raw_percentage = (earned / total) * 100
-
-                    final_percentage = raw_percentage + component["bonus"]
-
-                    contribution = (
-                        final_percentage *
-                        component["weight"] / 100
-                    )
-
-                    with st.expander(component["name"], expanded=True):
-
-                        st.write(
-                            f"**Raw Score:** {earned}/{total}"
-                        )
-
-                        st.write(
-                            f"**Raw Percentage:** {raw_percentage:.2f}%"
-                        )
-
-                        st.write(
-                            f"**Bonus Points:** {component['bonus']:.2f}"
-                        )
-
-                        st.write(
-                            f"**Final Percentage:** {final_percentage:.2f}%"
-                        )
-
-                        st.write(
-                            f"**Weight:** {component['weight']}%"
-                        )
-
-                        st.write(
-                            f"**Weighted Contribution:** {contribution:.2f}"
-                        )
-
-                st.success("Academic report generated successfully!")
+        st.error(str(e))
