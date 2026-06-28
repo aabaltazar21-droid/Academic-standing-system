@@ -327,8 +327,6 @@ Examples:
 • 90
 • 87.5
 • 105/100
-
-Bonus points are added AFTER the score is converted to a percentage.
 """
     )
 
