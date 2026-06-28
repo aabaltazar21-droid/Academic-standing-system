@@ -41,7 +41,7 @@ class Student:
 
                         percentage = float(score)
 
-                except:
+                except ValueError:
 
                     raise ValueError(
                         f"{component}: Invalid score format.\n"
