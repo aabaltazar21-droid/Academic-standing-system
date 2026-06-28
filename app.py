@@ -182,12 +182,27 @@ if st.button("Login"):
 # SUBJECT DASHBOARD
 # ==========================================================
 
-if st.session_state.selected_subject is None:
+# LOAD WORKSPACE WHEN SUBJECT IS SELECTED
+if st.session_state.selected_subject is not None:
 
-    show_subject_page()
+    workspace = get_workspace(st.session_state.selected_subject)
 
-    st.stop()
+    if workspace:
 
+        st.session_state.syllabus = pd.DataFrame(
+            workspace.get("syllabus", [])
+        )
+
+        st.session_state.saved_grades = pd.DataFrame(
+            workspace.get("grades", [])
+        )
+
+        st.session_state.target_grade = workspace.get("target_grade")
+
+    else:
+        st.session_state.syllabus = pd.DataFrame()
+        st.session_state.saved_grades = pd.DataFrame()
+        st.session_state.target_grade = None
 
 st.divider()
 if not st.session_state.logged_in:
