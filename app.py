@@ -51,7 +51,6 @@ class Student:
                         "87.5"
                     )
 
-            percentage += bonus
 
             contribution = percentage * weight / 100
 
@@ -62,7 +61,6 @@ class Student:
                     "Component": component,
                     "Score": score,
                     "Percentage": round(percentage, 2),
-                    "Bonus": bonus,
                     "Weight (%)": weight,
                     "Contribution": round(contribution, 2),
                 }
