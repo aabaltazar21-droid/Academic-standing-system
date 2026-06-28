@@ -460,6 +460,40 @@ if st.button(
             grades_df
         )
 
+        # ============================================
+# 🎯 Target Grade Calculation
+# ============================================
+
+required_average = None
+remaining_weight = 0
+remaining_components = []
+
+# Only perform the calculation if the user entered a target grade.
+if target_grade is not None:
+
+    # Find all unfinished components.
+    for _, row in grades_df.iterrows():
+
+        score = str(row["Score"]).strip()
+
+        if score == "":
+
+            remaining_weight += float(row["Weight (%)"])
+            remaining_components.append(row["Component"])
+
+    # How many weighted points are still needed?
+    points_needed = target_grade - final_grade
+
+    # Avoid division by zero if there are no remaining components.
+    if remaining_weight > 0:
+
+        required_average = (
+            points_needed / remaining_weight
+        ) * 100
+
+    else:
+        required_average = None
+
         standing, letter = student.get_result(final_grade)
 
         remark = (
