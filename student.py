@@ -2,7 +2,9 @@ import pandas as pd
 
 
 class Student:
+
     def __init__(self, student_id="", student_name=""):
+
         self.student_id = student_id
         self.student_name = student_name
 
@@ -42,11 +44,11 @@ class Student:
 
                     percentage = float(score)
 
-            except ValueError:
+            except:
 
                 raise ValueError(
                     f"{component}: Invalid score format.\n\n"
-                    "Accepted examples:\n"
+                    "Examples:\n"
                     "45/50\n"
                     "18/20\n"
                     "90\n"
@@ -87,8 +89,21 @@ class Student:
         elif grade >= 75:
             return "Passing"
 
-        else:
-            return "Needs Improvement"
+        return "Needs Improvement"
+
+    # ======================================================
+    # PASS / FAIL
+    # ======================================================
+
+    def get_remark(self, final_grade, passing_grade):
+
+        if passing_grade is None:
+            return None
+
+        if final_grade >= passing_grade:
+            return "PASSED"
+
+        return "FAILED"
 
     # ======================================================
     # TARGET ANALYSIS
@@ -106,7 +121,9 @@ class Student:
 
         for _, row in grades_df.iterrows():
 
-            if str(row["Score"]).strip() == "":
+            score = str(row["Score"]).strip()
+
+            if score == "":
 
                 remaining_weight += float(row["Weight (%)"])
 
@@ -118,8 +135,8 @@ class Student:
 
             return {
                 "required_average": None,
-                "remaining_components": [],
                 "remaining_weight": 0,
+                "remaining_components": [],
             }
 
         required_average = (
@@ -129,6 +146,26 @@ class Student:
 
         return {
             "required_average": required_average,
-            "remaining_components": remaining_components,
             "remaining_weight": remaining_weight,
+            "remaining_components": remaining_components,
         }
+
+    # ======================================================
+    # VALIDATE WEIGHTS
+    # ======================================================
+
+    def validate_weights(self, syllabus_df):
+
+        total = syllabus_df["Weight (%)"].sum()
+
+        return abs(total - 100) < 0.0001
+
+    # ======================================================
+    # TOTAL WEIGHT
+    # ======================================================
+
+    def total_weight(self, syllabus_df):
+
+        return float(
+            syllabus_df["Weight (%)"].sum()
+        )
