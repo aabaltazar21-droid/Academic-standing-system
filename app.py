@@ -115,6 +115,9 @@ if "student_id" not in st.session_state:
 if "student_name" not in st.session_state:
     st.session_state.student_name = ""
 
+if "selected_subject" not in st.session_state:
+    st.session_state.selected_subject = None
+
 st.title("🎓 Academic Standing Status System")
 
 
@@ -174,6 +177,17 @@ if st.button("Login"):
                 st.success(
                     f"Welcome back, {student_name}!"
                 )
+
+# ==========================================================
+# SUBJECT DASHBOARD
+# ==========================================================
+
+if st.session_state.selected_subject is None:
+
+    show_subject_page()
+
+    st.stop()
+
 
 st.divider()
 if not st.session_state.logged_in:
