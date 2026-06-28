@@ -21,10 +21,37 @@ def show_subject_page():
         )
 
     else:
+          st.subheader("Saved Subjects")
 
-        st.subheader("Saved Subjects")
+for subject in subjects:
 
-        for subject in subjects:
+    with st.container(border=True):
+
+        col1, col2 = st.columns([4, 1])
+
+        with col1:
+
+            st.markdown(f"### 📘 {subject['subject_name']}")
+
+            st.caption(f"Subject ID: {subject['id']}")
+
+        with col2:
+
+            if st.button(
+                "Open",
+                key=f"open_{subject['id']}",
+                use_container_width=True
+            ):
+                st.session_state.selected_subject = subject["id"]
+                st.rerun()
+
+            if st.button(
+                "🗑 Delete",
+                key=f"delete_{subject['id']}",
+                use_container_width=True
+            ):
+                delete_subject(subject["id"])
+                st.rerun()              
 
             col1, col2 = st.columns([5, 1])
 
