@@ -38,7 +38,6 @@ class Student:
                 continue
 
             try:
-
                 if "/" in score:
                     earned, total = score.split("/")
                     earned = float(earned.strip())
@@ -48,14 +47,12 @@ class Student:
                         raise ValueError
 
                     percentage = (earned / total) * 100
-
                 else:
                     percentage = float(score)
 
             except ValueError:
                 raise ValueError(
-                    f"{component}: Invalid score format.\n"
-                    "Use: 45/50, 18/20, 90, 87.5"
+                    f"{component}: Invalid score format. Use 45/50, 18/20, 90, etc."
                 )
 
             contribution = percentage * weight / 100
@@ -86,7 +83,7 @@ class Student:
 
 
 # ==========================================================
-# PAGE SETUP
+# PAGE CONFIG
 # ==========================================================
 
 st.set_page_config(
@@ -151,11 +148,16 @@ if st.button("Login"):
 
 
 # ==========================================================
-# SUBJECT PAGE
+# STOP IF NOT LOGGED IN
 # ==========================================================
 
 if not st.session_state.logged_in:
     st.stop()
+
+
+# ==========================================================
+# SUBJECT PAGE
+# ==========================================================
 
 if st.session_state.selected_subject is None:
     show_subject_page()
@@ -163,7 +165,7 @@ if st.session_state.selected_subject is None:
 
 
 # ==========================================================
-# LOAD WORKSPACE (IMPORTANT FIX)
+# LOAD WORKSPACE (PERSISTENCE CORE)
 # ==========================================================
 
 workspace = get_workspace(st.session_state.selected_subject)
@@ -202,7 +204,7 @@ if st.session_state.syllabus.empty:
 
 
 # ==========================================================
-# SYLLABUS EDITOR
+# SYLLABUS BUILDER
 # ==========================================================
 
 st.header("📚 Syllabus Builder")
@@ -217,7 +219,7 @@ st.session_state.syllabus = syllabus_df
 
 
 # ==========================================================
-# TARGET GRADE
+# TARGET GRADE INPUT
 # ==========================================================
 
 st.header("🎯 Target Grade")
@@ -225,9 +227,9 @@ st.header("🎯 Target Grade")
 target_input = st.text_input("Target Grade (%)")
 
 try:
-    target_grade = float(target_input) if target_input else None
+    target_grade_input = float(target_input) if target_input else None
 except:
-    target_grade = None
+    target_grade_input = None
 
 
 # ==========================================================
@@ -275,19 +277,72 @@ if st.button("Generate Report"):
         st.success("Report Generated!")
 
         st.metric("Final Grade", f"{final_grade:.2f}%")
-
         st.write("Standing:", standing)
 
         st.dataframe(breakdown)
 
-        # SAVE BUTTON (FIXED)
+        # ==================================================
+        # TARGET GRADE ANALYSIS (RESTORED FEATURE)
+        # ==================================================
+
+        required_average = None
+        remaining_weight = 0
+        remaining_components = []
+
+        if target_grade_input is not None:
+
+            for _, row in grades_df.iterrows():
+
+                score = str(row["Score"]).strip()
+
+                if score == "":
+                    remaining_weight += float(row["Weight (%)"])
+                    remaining_components.append(row["Component"])
+
+            if remaining_weight > 0:
+
+                points_needed = target_grade_input - final_grade
+                required_average = (points_needed / remaining_weight) * 100
+
+        # DISPLAY TARGET ANALYSIS
+        if target_grade_input is not None:
+
+            st.divider()
+            st.subheader("🎯 Target Grade Analysis")
+
+            if required_average is None:
+                st.info("No remaining components.")
+
+            elif required_average <= 0:
+                st.success("You already meet your target 🎉")
+
+            elif required_average <= 100:
+                st.info(
+                    f"You need **{required_average:.2f}% average** "
+                    "on remaining components."
+                )
+
+                st.write("Remaining components:")
+                for c in remaining_components:
+                    st.write(f"• {c}")
+
+            else:
+                st.error(
+                    f"You need **{required_average:.2f}%**, which is above 100%."
+                )
+                st.warning("Even perfect scores are not enough.")
+
+        # ==================================================
+        # SAVE WORKSPACE
+        # ==================================================
+
         if st.button("💾 Save Progress"):
 
             save_workspace(
                 st.session_state.selected_subject,
                 syllabus_df,
                 grades_df,
-                target_grade,
+                target_grade_input,
                 final_grade
             )
 
