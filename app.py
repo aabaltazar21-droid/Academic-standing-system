@@ -92,6 +92,7 @@ st.set_page_config(
     page_icon="🎓",
     layout="wide",
 )
+create_tables()
 
 st.title("🎓 Academic Standing Status System")
 
