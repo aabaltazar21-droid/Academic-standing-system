@@ -2,6 +2,12 @@ from database import (
     get_student_by_id,
     login_student,
     create_student,
+    get_subjects,
+    create_subject,
+    delete_subject,
+    load_workspace,
+    save_workspace,
+)
 )
 import streamlit as st
 import pandas as pd
