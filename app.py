@@ -1,4 +1,4 @@
-from database import get_student, create_student
+from database import get_student_by_id, login_student, create_student
 import streamlit as st
 import pandas as pd
 
