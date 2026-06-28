@@ -20,33 +20,37 @@ class Student:
             bonus = float(row["Bonus"])
 
             if score == "":
-                raise ValueError(f"{component}: Score is empty.")
+                percentage = 0
 
-            try:
+            else:
+                try:
 
-                if "/" in score:
-                    earned, total = score.split("/")
+        if "/" in score:
 
-                    earned = float(earned.strip())
-                    total = float(total.strip())
+            earned, total = score.split("/")
 
-                    if total <= 0:
-                        raise ValueError
+            earned = float(earned.strip())
+            total = float(total.strip())
 
-                    percentage = (earned / total) * 100
+            if total <= 0:
+                raise ValueError
 
-                else:
-                    percentage = float(score)
+            percentage = (earned / total) * 100
 
-            except:
-                raise ValueError(
-                    f"{component}: Invalid score format.\n"
-                    "Use examples like:\n"
-                    "45/50\n"
-                    "18/20\n"
-                    "90\n"
-                    "87.5"
-                )
+        else:
+
+            percentage = float(score)
+
+    except:
+
+        raise ValueError(
+            f"{component}: Invalid score format.\n"
+            "Use examples like:\n"
+            "45/50\n"
+            "18/20\n"
+            "90\n"
+            "87.5"
+        )
 
             percentage += bonus
 
