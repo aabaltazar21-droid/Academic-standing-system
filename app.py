@@ -431,13 +431,6 @@ st.header("📊 Academic Report")
 
 can_generate = True
 
-# Validate Student Information
-if student_id.strip() == "":
-    can_generate = False
-
-if student_name.strip() == "":
-    can_generate = False
-
 # Validate syllabus
 if len(st.session_state.syllabus) == 0:
     can_generate = False
@@ -521,8 +514,15 @@ if st.button(
 
         with col2:
 
-            st.write(f"**Student ID:** {student.student_id}")
-            st.write(f"**Student Name:** {student.name}")
+            st.write(
+    f"**Student ID:** "
+    f"{student.student_id if student.student_id.strip() else 'Not Provided'}"
+)
+
+            st.write(
+                f"**Student Name:** "
+                f"{student.name if student.name.strip() else 'Not Provided'}"
+            )
             st.write(f"**Letter Grade:** {letter}")
             st.write(f"**Academic Standing:** {standing}")
 
