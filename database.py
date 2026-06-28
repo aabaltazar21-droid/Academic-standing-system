@@ -140,3 +140,20 @@ def get_workspace(subject_id):
         return response.data["workspace"]
 
     return None
+
+def save_workspace(subject_id, syllabus_df, grades_df, target_grade, final_grade):
+
+    workspace = {
+        "syllabus": syllabus_df.to_dict(orient="records"),
+        "grades": grades_df.to_dict(orient="records"),
+        "target_grade": target_grade,
+        "final_grade": final_grade
+    }
+
+    return (
+        supabase
+        .table("subjects")
+        .update({"workspace": workspace})
+        .eq("id", subject_id)
+        .execute()
+    )
