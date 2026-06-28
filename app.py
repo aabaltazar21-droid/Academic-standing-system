@@ -3,8 +3,6 @@ from database import (
     login_student,
     create_student,
     get_subjects,
-    create_subject,
-    delete_subject,
     get_workspace,
     save_workspace,
 )
@@ -81,21 +79,22 @@ class Student:
 
 
 # ==========================================================
-# SETUP
+# PAGE SETUP
 # ==========================================================
 
 st.set_page_config(
-    page_title="Academic System",
+    page_title="Academic Standing Status System",
     page_icon="🎓",
     layout="wide",
 )
 
-st.title("🎓 Academic Standing System")
+st.title("🎓 Academic Standing Status System")
+st.write("Create your own grading system or load the default syllabus.")
 st.divider()
 
 
 # ==========================================================
-# SESSION STATE
+# SESSION STATE INIT
 # ==========================================================
 
 for key, default in {
@@ -104,6 +103,7 @@ for key, default in {
     "student_name": "",
     "selected_subject": None,
     "syllabus": pd.DataFrame(),
+    "saved_grades": pd.DataFrame(),
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
@@ -118,30 +118,37 @@ student_name = st.text_input("Student Name")
 
 if st.button("Login"):
 
-    if not student_id or not student_name:
-        st.error("Fill all fields")
+    if student_id.strip() == "" or student_name.strip() == "":
+        st.error("Please enter both Student ID and Student Name.")
 
     else:
-        if get_student_by_id(student_id) is None:
+
+        existing = get_student_by_id(student_id)
+
+        if existing is None:
             create_student(student_id, student_name)
 
         student = login_student(student_id, student_name)
 
-        if student:
+        if student is None:
+            st.error("Student ID and name do not match.")
+        else:
             st.session_state.logged_in = True
             st.session_state.student_id = student_id
             st.session_state.student_name = student_name
-            st.success("Logged in")
-        else:
-            st.error("Invalid login")
+            st.success(f"Welcome {student_name}!")
 
+
+# ==========================================================
+# STOP IF NOT LOGGED IN
+# ==========================================================
 
 if not st.session_state.logged_in:
     st.stop()
 
 
 # ==========================================================
-# SUBJECT PAGE
+# SUBJECT LIST VIEW
 # ==========================================================
 
 if st.session_state.selected_subject is None:
@@ -150,48 +157,75 @@ if st.session_state.selected_subject is None:
 
 
 # ==========================================================
-# SUBJECT HEADER
+# BACK BUTTON (YOUR REQUEST)
+# ==========================================================
+
+if st.button("⬅ Back to Subjects"):
+    st.session_state.selected_subject = None
+    st.session_state.syllabus = pd.DataFrame()
+    st.session_state.saved_grades = pd.DataFrame()
+    st.rerun()
+
+
+# ==========================================================
+# SUBJECT CONTEXT
 # ==========================================================
 
 subjects = get_subjects(st.session_state.student_id)
 
-current = next(
+current_subject = next(
     (s for s in subjects if s["id"] == st.session_state.selected_subject),
     None
 )
 
-if current:
-    st.title(f"📘 {current['subject_name']}")
+if current_subject:
+    st.title(f"📘 {current_subject['subject_name']}")
     st.divider()
 
 
 # ==========================================================
-# LOAD WORKSPACE
+# LOAD WORKSPACE (FIXED STABILITY)
 # ==========================================================
 
 workspace = get_workspace(st.session_state.selected_subject)
 
-if workspace:
-    st.session_state.syllabus = pd.DataFrame(workspace.get("syllabus", []))
+if workspace and isinstance(workspace, dict):
+
+    st.session_state.syllabus = pd.DataFrame(
+        workspace.get("syllabus", [])
+    )
+
+    st.session_state.saved_grades = pd.DataFrame(
+        workspace.get("grades", [])
+    )
+
     target_grade = workspace.get("target_grade")
+
 else:
     target_grade = None
 
 
-DEFAULT = pd.DataFrame({
-    "Component": ["CO1", "CO2", "CO3", "Attendance", "Exam"],
-    "Weight (%)": [20, 20, 20, 10, 30]
+# ==========================================================
+# DEFAULT SYLLABUS
+# ==========================================================
+
+DEFAULT_SYLLABUS = pd.DataFrame({
+    "Component": [
+        "CO1", "CO2", "CO3",
+        "Attendance", "Seatwork", "Final Exam"
+    ],
+    "Weight (%)": [15, 15, 10, 10, 15, 35]
 })
 
 if st.session_state.syllabus.empty:
-    st.session_state.syllabus = DEFAULT
+    st.session_state.syllabus = DEFAULT_SYLLABUS.copy()
 
 
 # ==========================================================
-# SYLLABUS
+# SYLLABUS BUILDER
 # ==========================================================
 
-st.header("📚 Syllabus")
+st.header("📚 Syllabus Builder")
 
 syllabus_df = st.data_editor(
     st.session_state.syllabus,
@@ -217,7 +251,7 @@ except:
 
 
 # ==========================================================
-# GRADES
+# GRADES INPUT
 # ==========================================================
 
 st.header("📝 Grades")
@@ -226,7 +260,10 @@ grades = []
 
 for i, row in syllabus_df.iterrows():
 
-    score = st.text_input(f"{row['Component']} Score", key=f"s{i}")
+    score = st.text_input(
+        f"{row['Component']} Score",
+        key=f"score_{i}"
+    )
 
     grades.append({
         "Component": row["Component"],
@@ -241,69 +278,78 @@ grades_df = pd.DataFrame(grades)
 # REPORT
 # ==========================================================
 
-st.header("📊 Report")
+st.header("📊 Academic Report")
 
-if st.button("Generate"):
+if st.button("Generate Report"):
 
-    student = Student(st.session_state.student_id, st.session_state.student_name)
+    try:
 
-    final, breakdown = student.compute_final_grade(grades_df)
-    st.success("Generated")
+        student = Student(
+            st.session_state.student_id,
+            st.session_state.student_name
+        )
 
-    st.metric("Final Grade", f"{final:.2f}%")
-    st.dataframe(breakdown)
+        final_grade, breakdown = student.compute_final_grade(grades_df)
+        standing = student.get_result(final_grade)
 
-    # ================= TARGET =================
+        st.success("Report Generated!")
 
-    if target is not None:
+        st.metric("Final Grade", f"{final_grade:.2f}%")
+        st.write("Standing:", standing)
 
-        remaining_w = 0
-        remaining = []
+        st.dataframe(breakdown)
 
-        for _, r in grades_df.iterrows():
-            if str(r["Score"]).strip() == "":
-                remaining_w += r["Weight (%)"]
-                remaining.append(r["Component"])
+        # ==================================================
+        # TARGET GRADE ANALYSIS
+        # ==================================================
 
-        if remaining_w > 0:
-            needed = (target - final) / remaining_w * 100
+        if target is not None:
+
+            remaining_weight = 0
+            remaining_components = []
+
+            for _, row in grades_df.iterrows():
+
+                if str(row["Score"]).strip() == "":
+                    remaining_weight += float(row["Weight (%)"])
+                    remaining_components.append(row["Component"])
 
             st.divider()
             st.subheader("🎯 Target Analysis")
 
-            if needed <= 0:
-                st.success("Target already met")
-            elif needed <= 100:
-                st.info(f"You need {needed:.2f}% average")
-                for c in remaining:
-                    st.write("•", c)
+            if remaining_weight == 0:
+                st.info("No remaining components.")
+
             else:
-                st.error("Impossible without bonus")
+                needed = (target - final_grade) / remaining_weight * 100
+
+                if needed <= 0:
+                    st.success("You already meet your target 🎉")
+
+                elif needed <= 100:
+                    st.info(f"You need {needed:.2f}% average")
+                    for c in remaining_components:
+                        st.write("•", c)
+
+                else:
+                    st.error("Target not reachable without bonus")
 
 
-    # ================= SAVE =================
+        # ==================================================
+        # SAVE WORKSPACE
+        # ==================================================
 
-    if st.button("💾 Save"):
+        if st.button("💾 Save Progress"):
 
-        save_workspace(
-            st.session_state.selected_subject,
-            syllabus_df,
-            grades_df,
-            target,
-            final
-        )
+            save_workspace(
+                st.session_state.selected_subject,
+                syllabus_df,
+                grades_df,
+                target,
+                final_grade
+            )
 
-        st.success("Saved")
+            st.success("Saved successfully!")
 
-
-# ==========================================================
-# AUTO SYNC (SAFE VERSION)
-# ==========================================================
-
-save_workspace(
-    st.session_state.selected_subject,
-    st.session_state.syllabus,
-    grades_df,
-    target,
-    0
-)
+    except Exception as e:
+        st.error(str(e))
