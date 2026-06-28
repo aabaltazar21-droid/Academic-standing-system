@@ -341,12 +341,12 @@ Bonus points are added AFTER the score is converted to a percentage.
 
         st.subheader(f"{component} ({weight:.2f}%)")
 
-       score = st.text_input(
+
+        score = st.text_input(
             "Score",
             placeholder="Examples: 45/50 or 90",
             key=f"score_{index}"
-)
-
+        )
         # -----------------------------
         # Live Preview
         # -----------------------------
