@@ -17,8 +17,7 @@ class Student:
             component = str(row["Component"]).strip()
             weight = float(row["Weight (%)"])
             score = str(row["Score"]).strip()
-            bonus = float(row["Bonus"])
-
+            
             if score == "":
                 percentage = 0
 
@@ -342,24 +341,11 @@ Bonus points are added AFTER the score is converted to a percentage.
 
         st.subheader(f"{component} ({weight:.2f}%)")
 
-        col1, col2 = st.columns([3, 1])
-
-        with col1:
-
-            score = st.text_input(
-                "Score",
-                placeholder="Examples: 45/50 or 90",
-                key=f"score_{index}"
-            )
-
-        with col2:
-
-            bonus = st.number_input(
-                "Bonus",
-                value=0.0,
-                step=0.5,
-                key=f"bonus_{index}"
-            )
+       score = st.text_input(
+            "Score",
+            placeholder="Examples: 45/50 or 90",
+            key=f"score_{index}"
+)
 
         # -----------------------------
         # Live Preview
@@ -385,7 +371,6 @@ Bonus points are added AFTER the score is converted to a percentage.
 
                     percentage = float(score)
 
-                percentage += bonus
 
                 contribution = percentage * weight / 100
 
@@ -408,7 +393,6 @@ Bonus points are added AFTER the score is converted to a percentage.
                 "Component": component,
                 "Weight (%)": weight,
                 "Score": score,
-                "Bonus": bonus,
             }
         )
 
