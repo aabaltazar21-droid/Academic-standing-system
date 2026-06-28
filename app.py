@@ -1,6 +1,7 @@
 from database import create_student, get_student
 import streamlit as st
 import pandas as pd
+from database import test_connection
 
 
 class Student:
@@ -94,6 +95,20 @@ st.set_page_config(
 )
 
 st.title("🎓 Academic Standing Status System")
+
+if st.button("Test Database Connection"):
+
+    try:
+
+        result = test_connection()
+
+        st.success("Successfully connected to Supabase!")
+
+        st.write(result.data)
+
+    except Exception as e:
+
+        st.error(e)
 
 st.write(
     "Create your own grading system or load the default syllabus."
