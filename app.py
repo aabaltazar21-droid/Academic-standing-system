@@ -71,19 +71,19 @@ class Student:
     def get_result(self, grade):
 
         if grade >= 90:
-            return "Outstanding", "A"
+            return "Outstanding"
 
         elif grade >= 85:
-            return "Very Satisfactory", "B"
+            return "Very Satisfactory"
 
         elif grade >= 80:
-            return "Satisfactory", "C"
+            return "Satisfactory"
 
         elif grade >= 75:
-            return "Passing", "D"
+            return "Passing"
 
         else:
-            return "Needs Improvement", "F"
+            return "Needs Improvement"
 
 
 st.set_page_config(
@@ -434,7 +434,7 @@ if st.button(
             grades_df
         )
 
-        standing, letter = student.get_result(final_grade)
+        standing, _ = student.get_result(final_grade)
 
         remark = (
             "PASSED"
@@ -503,7 +503,7 @@ if st.button(
                 f"**Student Name:** "
                 f"{student.name if student.name.strip() else 'Not Provided'}"
             )
-            st.write(f"**Letter Grade:** {letter}")
+           
             st.write(f"**Academic Standing:** {standing}")
 
             if remark == "PASSED":
