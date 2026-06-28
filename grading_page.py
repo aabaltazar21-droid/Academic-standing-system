@@ -2,105 +2,136 @@ import streamlit as st
 import pandas as pd
 
 from student import Student
-from database import save_workspace
-
-
-# ==========================================================
-# DEFAULT SYLLABUS
-# ==========================================================
-
-DEFAULT_SYLLABUS = pd.DataFrame(
-    {
-        "Component": [
-            "CO1",
-            "CO2",
-            "CO3",
-            "Attendance",
-            "Seatwork",
-            "Final Exam",
-        ],
-        "Weight (%)": [
-            15,
-            15,
-            10,
-            10,
-            15,
-            35,
-        ],
-    }
+from database import (
+    get_workspace,
+    save_workspace,
 )
 
 
-# ==========================================================
-# MAIN PAGE
-# ==========================================================
-
 def show_grading_page():
 
-    # ------------------------------------------------------
-    # Initialize session state
-    # ------------------------------------------------------
+    # ======================================================
+    # LOAD WORKSPACE (ONLY ONCE)
+    # ======================================================
 
-    if (
-        st.session_state.syllabus is None
-        or len(st.session_state.syllabus) == 0
-    ):
+    if not st.session_state.workspace_loaded:
 
-        st.session_state.syllabus = DEFAULT_SYLLABUS.copy()
+        workspace = get_workspace(
+            st.session_state.selected_subject
+        )
 
-    if "saved_grades" not in st.session_state:
+        if workspace:
 
-        st.session_state.saved_grades = pd.DataFrame()
+            syllabus = workspace.get(
+                "syllabus",
+                []
+            )
 
-    if "target_grade" not in st.session_state:
+            grades = workspace.get(
+                "grades",
+                []
+            )
 
-        st.session_state.target_grade = None
+            target = workspace.get(
+                "target_grade",
+                None
+            )
+
+            st.session_state.syllabus = pd.DataFrame(
+                syllabus
+            )
+
+            st.session_state.saved_grades = pd.DataFrame(
+                grades
+            )
+
+            st.session_state.target_grade = target
+
+        st.session_state.workspace_loaded = True
+
+    # ======================================================
+    # DEFAULT SYLLABUS
+    # ======================================================
+
+    DEFAULT_SYLLABUS = pd.DataFrame(
+        {
+            "Component": [
+                "CO1",
+                "CO2",
+                "CO3",
+                "Attendance",
+                "Seatwork",
+                "Final Exam",
+            ],
+            "Weight (%)": [
+                15,
+                15,
+                10,
+                10,
+                15,
+                35,
+            ],
+        }
+    )
+
+    if st.session_state.syllabus.empty:
+
+        st.session_state.syllabus = (
+            DEFAULT_SYLLABUS.copy()
+        )
+
+    student = Student(
+        st.session_state.student_id,
+        st.session_state.student_name,
+    )
+
+    # ======================================================
+    # SYLLABUS BUILDER
+    # ======================================================
 
     st.header("📚 Syllabus Builder")
 
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        if st.button(
+            "📋 Load Default Syllabus",
+            use_container_width=True,
+        ):
+
+            st.session_state.syllabus = (
+                DEFAULT_SYLLABUS.copy()
+            )
+
+            st.rerun()
+
+    with col2:
+
+        if st.button(
+            "🗑 Clear Syllabus",
+            use_container_width=True,
+        ):
+
+            st.session_state.syllabus = pd.DataFrame(
+                columns=[
+                    "Component",
+                    "Weight (%)",
+                ]
+            )
+
+            st.rerun()
+
     syllabus_df = st.data_editor(
-
         st.session_state.syllabus,
-
         hide_index=True,
-
         use_container_width=True,
-
         num_rows="dynamic",
-
-        key="syllabus_editor",
-
-        column_config={
-
-            "Component": st.column_config.TextColumn(
-
-                "Component",
-
-                required=True,
-
-            ),
-
-            "Weight (%)": st.column_config.NumberColumn(
-
-                "Weight (%)",
-
-                min_value=0.0,
-
-                step=1.0,
-
-                format="%.2f",
-
-            ),
-
-        },
-
     )
 
-    # ------------------------------------------------------
-    # Clean data
-    # ------------------------------------------------------
-
-    syllabus_df = syllabus_df.dropna(how="all")
+    syllabus_df = syllabus_df.dropna(
+        how="all"
+    )
 
     syllabus_df["Component"] = (
 
@@ -115,65 +146,49 @@ def show_grading_page():
     )
 
     syllabus_df = syllabus_df[
-
         syllabus_df["Component"] != ""
-
     ]
 
     syllabus_df["Weight (%)"] = pd.to_numeric(
-
         syllabus_df["Weight (%)"],
-
         errors="coerce",
-
     ).fillna(0)
 
     st.session_state.syllabus = syllabus_df.copy()
 
-    # ------------------------------------------------------
-    # Weight Summary
-    # ------------------------------------------------------
-
-    total_weight = syllabus_df["Weight (%)"].sum()
+    total_weight = student.total_weight(
+        syllabus_df
+    )
 
     st.subheader("Weight Summary")
 
-    col1, col2 = st.columns(2)
+    left, right = st.columns(2)
 
-    with col1:
+    with left:
 
         st.metric(
-
             "Current Total Weight",
-
-            f"{total_weight:.2f}%",
-
+            f"{total_weight:.2f}%"
         )
 
-    with col2:
+    with right:
 
         if total_weight < 100:
 
             st.warning(
-
-                f"Remaining Weight: {100-total_weight:.2f}%"
-
+                f"Remaining: {100-total_weight:.2f}%"
             )
 
         elif total_weight > 100:
 
             st.error(
-
-                f"Exceeded by {total_weight-100:.2f}%"
-
+                f"Exceeded: {total_weight-100:.2f}%"
             )
 
         else:
 
             st.success(
-
-                "Perfect! Total weight is exactly 100%."
-
+                "Total weight is 100%"
             )
 
     st.divider()
@@ -185,25 +200,19 @@ def show_grading_page():
     st.header("🎯 Target Grade")
 
     target_input = st.text_input(
-
         "Target Grade (%)",
-
-        value="" if st.session_state.target_grade is None else str(
-            st.session_state.target_grade
-        ),
-
+        value=""
+        if st.session_state.target_grade is None
+        else str(st.session_state.target_grade),
+        placeholder="Optional",
     )
 
     try:
 
         target_grade = (
-
             float(target_input)
-
             if target_input.strip()
-
             else None
-
         )
 
     except:
@@ -212,89 +221,126 @@ def show_grading_page():
 
     st.session_state.target_grade = target_grade
 
+    st.divider()
+
     # ======================================================
     # GRADE ENTRY
     # ======================================================
 
-    st.header("📝 Grades")
+    st.header("📝 Enter Student Scores")
+
+    st.info(
+        """
+The Score field accepts:
+
+• 45/50
+• 18/20
+• 90
+• 87.5
+• 105/100
+"""
+    )
 
     grades = []
 
-    saved = st.session_state.saved_grades
+    previous = st.session_state.saved_grades
 
     for index, row in syllabus_df.iterrows():
+
+        component = row["Component"]
+        weight = row["Weight (%)"]
+
+        st.subheader(
+            f"{component} ({weight:.2f}%)"
+        )
 
         default_score = ""
 
         if (
-
-            not saved.empty
-
-            and index < len(saved)
-
-            and "Score" in saved.columns
-
+            not previous.empty
+            and index < len(previous)
+            and "Score" in previous.columns
         ):
 
             default_score = str(
-
-                saved.iloc[index]["Score"]
-
+                previous.iloc[index]["Score"]
             )
 
         score = st.text_input(
-
-            f"{row['Component']} Score",
-
+            "Score",
             value=default_score,
-
+            placeholder="45/50 or 90",
             key=f"score_{index}",
-
         )
+
+        if score.strip() != "":
+
+            try:
+
+                if "/" in score:
+
+                    earned, total = score.split("/")
+
+                    earned = float(earned.strip())
+                    total = float(total.strip())
+
+                    percentage = (
+                        earned / total
+                    ) * 100
+
+                else:
+
+                    percentage = float(score)
+
+                contribution = (
+                    percentage * weight / 100
+                )
+
+                st.success(
+                    f"Percentage: {percentage:.2f}% | "
+                    f"Contribution: {contribution:.2f}"
+                )
+
+            except:
+
+                st.error(
+                    "Invalid score format."
+                )
 
         grades.append(
-
             {
-
-                "Component": row["Component"],
-
-                "Weight (%)": row["Weight (%)"],
-
+                "Component": component,
+                "Weight (%)": weight,
                 "Score": score,
-
             }
-
         )
+
+        st.divider()
 
     grades_df = pd.DataFrame(grades)
 
-    st.session_state.saved_grades = grades_df.copy()
+    st.session_state.saved_grades = (
+        grades_df.copy()
+    )
 
     # ======================================================
     # ACADEMIC REPORT
     # ======================================================
 
-    st.divider()
-
     st.header("📊 Academic Report")
 
     can_generate = (
         len(syllabus_df) > 0
-        and abs(total_weight - 100) < 0.0001
+        and student.validate_weights(syllabus_df)
     )
 
     if st.button(
         "Generate Academic Report",
-        use_container_width=True,
         disabled=not can_generate,
+        use_container_width=True,
     ):
 
         try:
-
-            student = Student(
-                st.session_state.student_id,
-                st.session_state.student_name,
-            )
 
             final_grade, breakdown = (
                 student.compute_final_grade(
@@ -302,8 +348,10 @@ def show_grading_page():
                 )
             )
 
-            standing = student.get_academic_standing(
-                final_grade
+            standing = (
+                student.get_academic_standing(
+                    final_grade
+                )
             )
 
             st.success(
@@ -312,9 +360,9 @@ def show_grading_page():
 
             st.divider()
 
-            col1, col2 = st.columns(2)
+            left, right = st.columns(2)
 
-            with col1:
+            with left:
 
                 st.metric(
                     "Final Grade",
@@ -325,18 +373,21 @@ def show_grading_page():
                     min(final_grade / 100, 1.0)
                 )
 
-            with col2:
+            with right:
 
                 st.write(
-                    f"**Student ID:** {st.session_state.student_id}"
+                    f"**Student ID:** "
+                    f"{student.student_id}"
                 )
 
                 st.write(
-                    f"**Student Name:** {st.session_state.student_name}"
+                    f"**Student Name:** "
+                    f"{student.student_name}"
                 )
 
                 st.write(
-                    f"**Academic Standing:** {standing}"
+                    f"**Academic Standing:** "
+                    f"{standing}"
                 )
 
             st.divider()
@@ -351,16 +402,18 @@ def show_grading_page():
                 use_container_width=True,
             )
 
-            # ==========================================
-            # TARGET ANALYSIS
-            # ==========================================
+            # ============================================
+            # TARGET GRADE ANALYSIS
+            # ============================================
 
             if target_grade is not None:
 
-                analysis = student.target_analysis(
-                    grades_df,
-                    final_grade,
-                    target_grade,
+                analysis = (
+                    student.target_analysis(
+                        grades_df,
+                        final_grade,
+                        target_grade,
+                    )
                 )
 
                 st.divider()
@@ -370,7 +423,7 @@ def show_grading_page():
                 )
 
                 st.write(
-                    f"**Target Grade:** "
+                    f"Target Grade: "
                     f"{target_grade:.2f}%"
                 )
 
@@ -393,8 +446,8 @@ def show_grading_page():
                 elif required <= 100:
 
                     st.info(
-                        f"You need an average of "
-                        f"**{required:.2f}%** "
+                        f"You need to average "
+                        f"{required:.2f}% "
                         "on the remaining components."
                     )
 
@@ -414,7 +467,7 @@ def show_grading_page():
 
                     st.error(
                         f"You would need "
-                        f"**{required:.2f}%** "
+                        f"{required:.2f}% "
                         "which is above 100%."
                     )
 
@@ -426,17 +479,20 @@ def show_grading_page():
     # AUTO SAVE
     # ======================================================
 
-    current_workspace = {
-        "syllabus": syllabus_df.to_dict("records"),
-        "grades": grades_df.to_dict("records"),
+    workspace = {
+        "syllabus": syllabus_df.to_dict(
+            orient="records"
+        ),
+        "grades": grades_df.to_dict(
+            orient="records"
+        ),
         "target_grade": target_grade,
     }
 
-    previous_workspace = st.session_state.get(
-        "_last_saved_workspace"
-    )
+    if "_last_workspace" not in st.session_state:
+        st.session_state._last_workspace = None
 
-    if current_workspace != previous_workspace:
+    if workspace != st.session_state._last_workspace:
 
         try:
 
@@ -444,13 +500,10 @@ def show_grading_page():
 
             try:
 
-                student = Student(
-                    st.session_state.student_id,
-                    st.session_state.student_name,
-                )
-
-                final_grade, _ = student.compute_final_grade(
-                    grades_df
+                final_grade, _ = (
+                    student.compute_final_grade(
+                        grades_df
+                    )
                 )
 
             except:
@@ -464,12 +517,10 @@ def show_grading_page():
                 final_grade,
             )
 
-            st.session_state._last_saved_workspace = (
-                current_workspace
-            )
+            st.session_state._last_workspace = workspace.copy()
 
         except Exception as e:
 
             st.warning(
-                f"Auto-save failed: {e}"
+                f"Auto Save Failed: {e}"
             )
