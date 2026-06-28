@@ -25,32 +25,32 @@ class Student:
             else:
                 try:
 
-        if "/" in score:
+                    if "/" in score:
 
-            earned, total = score.split("/")
+                        earned, total = score.split("/")
 
-            earned = float(earned.strip())
-            total = float(total.strip())
+                        earned = float(earned.strip())
+                        total = float(total.strip())
 
-            if total <= 0:
-                raise ValueError
+                        if total <= 0:
+                            raise ValueError
 
-            percentage = (earned / total) * 100
+                        percentage = (earned / total) * 100
 
-        else:
+                    else:
 
-            percentage = float(score)
+                        percentage = float(score)
 
-    except:
+                except:
 
-        raise ValueError(
-            f"{component}: Invalid score format.\n"
-            "Use examples like:\n"
-            "45/50\n"
-            "18/20\n"
-            "90\n"
-            "87.5"
-        )
+                    raise ValueError(
+                        f"{component}: Invalid score format.\n"
+                        "Use examples like:\n"
+                        "45/50\n"
+                        "18/20\n"
+                        "90\n"
+                        "87.5"
+                    )
 
             percentage += bonus
 
