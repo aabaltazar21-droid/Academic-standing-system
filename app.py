@@ -1,3 +1,4 @@
+from database import create_tables
 import streamlit as st
 import pandas as pd
 
@@ -91,6 +92,7 @@ st.set_page_config(
     page_icon="🎓",
     layout="wide",
 )
+create_tables()
 
 st.title("🎓 Academic Standing Status System")
 
