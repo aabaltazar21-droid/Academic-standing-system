@@ -434,7 +434,7 @@ if st.button(
             grades_df
         )
 
-        standing, _ = student.get_result(final_grade)
+        standing = student.get_result(final_grade)
 
         remark = (
             "PASSED"
