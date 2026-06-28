@@ -581,7 +581,7 @@ if st.button(
 
         st.success("Academic Report Generated!")
 
-if st.button("💾 Save Progress"):
+        if st.button("💾 Save Progress"):
 
     save_workspace(
         st.session_state.selected_subject,
