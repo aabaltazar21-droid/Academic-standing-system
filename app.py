@@ -110,6 +110,26 @@ student_id = st.text_input("Student ID")
 
 student_name = st.text_input("Student Name")
 
+if st.button("Login"):
+
+    if student_id.strip() == "" or student_name.strip() == "":
+
+        st.error("Please enter both Student ID and Student Name.")
+
+    else:
+
+        student = get_student(student_id)
+
+        if student is None:
+
+            create_student(student_id, student_name)
+
+            st.success("New student account created!")
+
+        else:
+
+            st.success(f"Welcome back, {student['student_name']}!")
+
 st.divider()
 
 DEFAULT_SYLLABUS = pd.DataFrame(
