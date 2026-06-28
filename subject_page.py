@@ -15,6 +15,9 @@ def show_subject_page():
     subjects = get_subjects(student_id)
 
     if len(subjects) == 0:
+        st.info("You don't have any subjects yet.")
+
+        st.caption("Create your first subject below 👇")
 
         st.info(
             "You haven't created any subjects yet."
