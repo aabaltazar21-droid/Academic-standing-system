@@ -40,7 +40,7 @@ def login_student(student_id, student_name):
 
 def create_student(student_id, student_name):
 
-    response = (
+    return (
         supabase
         .table("students")
         .insert(
@@ -52,4 +52,75 @@ def create_student(student_id, student_name):
         .execute()
     )
 
-    return response
+
+# ==========================================================
+# SUBJECT FUNCTIONS
+# ==========================================================
+
+def get_subjects(student_id):
+
+    response = (
+        supabase
+        .table("subjects")
+        .select("*")
+        .eq("student_id", student_id)
+        .order("subject_name")
+        .execute()
+    )
+
+    return response.data
+
+
+def create_subject(student_id, subject_name):
+
+    return (
+        supabase
+        .table("subjects")
+        .insert(
+            {
+                "student_id": student_id,
+                "subject_name": subject_name,
+            }
+        )
+        .execute()
+    )
+
+
+def delete_subject(subject_id):
+
+    return (
+        supabase
+        .table("subjects")
+        .delete()
+        .eq("id", subject_id)
+        .execute()
+    )
+
+
+def load_workspace(subject_id):
+
+    response = (
+        supabase
+        .table("subjects")
+        .select("workspace")
+        .eq("id", subject_id)
+        .single()
+        .execute()
+    )
+
+    return response.data
+
+
+def save_workspace(subject_id, workspace):
+
+    return (
+        supabase
+        .table("subjects")
+        .update(
+            {
+                "workspace": workspace
+            }
+        )
+        .eq("id", subject_id)
+        .execute()
+    )
