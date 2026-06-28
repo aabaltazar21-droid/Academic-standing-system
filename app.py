@@ -469,6 +469,37 @@ if st.button(
             else "FAILED"
         )
 
+        # ============================================
+        # 🎯 Target Grade Analysis
+        # ============================================
+
+        required_average = None
+        remaining_weight = 0
+        remaining_components = []
+
+        if target_grade is not None:
+
+            for _, row in grades_df.iterrows():
+
+                score = str(row["Score"]).strip()
+
+                if score == "":
+
+                    remaining_weight += float(row["Weight (%)"])
+                    remaining_components.append(
+                        str(row["Component"])
+                    )
+
+            if remaining_weight > 0:
+
+                points_needed = target_grade - final_grade
+
+                required_average = (
+                    points_needed / remaining_weight
+                ) * 100
+
+#====================================================================================
+
 
 
         st.success("Academic Report Generated!")
