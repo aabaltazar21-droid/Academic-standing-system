@@ -1,5 +1,4 @@
 from database import test_connection
-from database import create_student, get_student
 import streamlit as st
 import pandas as pd
 
