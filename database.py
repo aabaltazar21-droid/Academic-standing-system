@@ -1,14 +1,32 @@
 from config import supabase
 
 
-def test_connection():
+def get_student(student_id):
 
     response = (
         supabase
         .table("students")
         .select("*")
-        .limit(1)
+        .eq("student_id", student_id)
         .execute()
     )
 
-    return response
+    if response.data:
+        return response.data[0]
+
+    return None
+
+
+def create_student(student_id, student_name):
+
+    return (
+        supabase
+        .table("students")
+        .insert(
+            {
+                "student_id": student_id,
+                "student_name": student_name,
+            }
+        )
+        .execute()
+    )
