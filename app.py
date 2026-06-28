@@ -200,6 +200,43 @@ syllabus_df = st.data_editor(
     },
     key="editor",
 )
+# ============================================
+# Target Grade
+# ============================================
+
+st.header("🎯 Target Grade")
+
+st.caption(
+    "Optional. Enter your desired final grade "
+    "to see the average score needed on the "
+    "remaining components."
+)
+
+target_grade_input = st.text_input(
+    "Target Grade (%)",
+    placeholder="Example: 75"
+)
+
+if target_grade_input.strip() == "":
+    target_grade = None
+
+else:
+
+    try:
+
+        target_grade = float(target_grade_input)
+
+        if target_grade < 0:
+
+            st.error("Target grade cannot be negative.")
+            target_grade = None
+
+    except ValueError:
+
+        st.error("Target grade must be a valid number.")
+        target_grade = None
+
+
 
 # ----------------------------------------------------------
 # CLEAN DATA
