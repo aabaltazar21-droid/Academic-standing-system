@@ -92,6 +92,18 @@ st.set_page_config(
     page_icon="🎓",
     layout="wide",
 )
+# ==========================================================
+# SESSION STATE
+# ==========================================================
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if "student_id" not in st.session_state:
+    st.session_state.student_id = ""
+
+if "student_name" not in st.session_state:
+    st.session_state.student_name = ""
 
 st.title("🎓 Academic Standing Status System")
 
