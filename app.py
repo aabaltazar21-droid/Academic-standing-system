@@ -510,10 +510,12 @@ if st.button(
            
             st.write(f"**Academic Standing:** {standing}")
 
-            if remark == "PASSED":
-                st.success(remark)
-            else:
-                st.error(remark)
+            if remark is not None:
+
+                if remark == "PASSED":
+                    st.success(remark)
+                else:
+                    st.error(remark)
 
         st.divider()
 
