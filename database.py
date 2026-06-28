@@ -1,7 +1,27 @@
 from config import supabase
 
 
-def get_student(student_id, student_name):
+# ==========================================================
+# STUDENT FUNCTIONS
+# ==========================================================
+
+def get_student_by_id(student_id):
+
+    response = (
+        supabase
+        .table("students")
+        .select("*")
+        .eq("student_id", student_id)
+        .execute()
+    )
+
+    if response.data:
+        return response.data[0]
+
+    return None
+
+
+def login_student(student_id, student_name):
 
     response = (
         supabase
@@ -16,24 +36,11 @@ def get_student(student_id, student_name):
         return response.data[0]
 
     return None
-    
-    response = (
-        supabase
-        .table("students")
-        .select("*")
-        .eq("student_id", student_id)
-        .execute()
-    )
-
-    if response.data:
-        return response.data[0]
-
-    return None
 
 
 def create_student(student_id, student_name):
 
-    return (
+    response = (
         supabase
         .table("students")
         .insert(
@@ -44,3 +51,5 @@ def create_student(student_id, student_name):
         )
         .execute()
     )
+
+    return response
