@@ -163,6 +163,21 @@ if st.session_state.selected_subject is None:
     show_subject_page()
     st.stop()
 
+# ==========================================================
+# SUBJECT CONTEXT HEADER (PHASE 2 FIX)
+# ==========================================================
+
+subjects = get_subjects(st.session_state.student_id)
+
+current_subject = next(
+    (s for s in subjects if s["id"] == st.session_state.selected_subject),
+    None
+)
+
+if current_subject:
+    st.title(f"📘 {current_subject['subject_name']}")
+    st.divider()
+
 
 # ==========================================================
 # LOAD WORKSPACE (PERSISTENCE CORE)
