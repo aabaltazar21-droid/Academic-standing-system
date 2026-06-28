@@ -11,102 +11,75 @@ def show_subject_page():
     st.header("📚 My Subjects")
 
     student_id = st.session_state.student_id
-
     subjects = get_subjects(student_id)
 
-    if len(subjects) == 0:
-        st.info("You don't have any subjects yet.")
+    # ======================================================
+    # EMPTY STATE
+    # ======================================================
 
+    if not subjects:
+
+        st.info("You don't have any subjects yet.")
         st.caption("Create your first subject below 👇")
 
-        st.info(
-            "You haven't created any subjects yet."
-        )
-
     else:
-          st.subheader("Saved Subjects")
 
-for subject in subjects:
+        st.subheader("Saved Subjects")
 
-    with st.container(border=True):
+        # ==================================================
+        # SUBJECT CARDS
+        # ==================================================
 
-        col1, col2 = st.columns([4, 1])
+        for subject in subjects:
 
-        with col1:
+            with st.container(border=True):
 
-            st.markdown(f"### 📘 {subject['subject_name']}")
+                col1, col2 = st.columns([4, 1])
 
-            st.caption(f"Subject ID: {subject['id']}")
+                with col1:
+                    st.markdown(f"### 📘 {subject['subject_name']}")
+                    st.caption(f"Subject ID: {subject['id']}")
 
-        with col2:
+                with col2:
 
-            if st.button(
-                "Open",
-                key=f"open_{subject['id']}",
-                use_container_width=True
-            ):
-                st.session_state.selected_subject = subject["id"]
-                st.rerun()
+                    if st.button(
+                        "Open",
+                        key=f"open_{subject['id']}",
+                        use_container_width=True
+                    ):
+                        st.session_state.selected_subject = subject["id"]
+                        st.rerun()
 
-            if st.button(
-                "🗑 Delete",
-                key=f"delete_{subject['id']}",
-                use_container_width=True
-            ):
-                delete_subject(subject["id"])
-                st.rerun()              
+                    if st.button(
+                        "🗑 Delete",
+                        key=f"delete_{subject['id']}",
+                        use_container_width=True
+                    ):
+                        delete_subject(subject["id"])
+                        st.rerun()
 
-            col1, col2 = st.columns([5, 1])
+            st.divider()
 
-            with col1:
+    # ======================================================
+    # CREATE NEW SUBJECT
+    # ======================================================
 
-                if st.button(
-                    subject["subject_name"],
-                    key=f"open_{subject['id']}",
-                    use_container_width=True,
-                ):
-
-                    st.session_state.selected_subject = subject["id"]
-
-                    st.success(
-                        f"Opened {subject['subject_name']}"
-                    )
-
-            with col2:
-
-                if st.button(
-                    "🗑",
-                    key=f"delete_{subject['id']}",
-                ):
-
-                    delete_subject(subject["id"])
-
-                    st.rerun()
-
-    st.divider()
-
-    st.subheader("Create Subject")
+    st.subheader("➕ Create New Subject")
 
     subject_name = st.text_input(
-        "Subject Name"
+        "Subject Name",
+        placeholder="e.g. Mathematics"
     )
 
     if st.button(
         "Create Subject",
-        use_container_width=True,
+        use_container_width=True
     ):
 
         if subject_name.strip() == "":
-
-            st.error(
-                "Please enter a subject name."
-            )
+            st.error("Please enter a subject name.")
 
         else:
-
-            create_subject(
-                student_id,
-                subject_name
-            )
-
+            create_subject(student_id, subject_name)
+            st.success("Subject created successfully!")
             st.rerun()
