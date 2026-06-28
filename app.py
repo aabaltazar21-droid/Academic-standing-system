@@ -229,8 +229,7 @@ syllabus_df = st.data_editor(
     use_container_width=True,
     num_rows="dynamic",
 )
-st.session_state.syllabus = syllabus_df
-auto_save()
+
 
 st.session_state.syllabus = syllabus_df
 
