@@ -436,11 +436,15 @@ if st.button(
 
         standing = student.get_result(final_grade)
 
-        remark = (
-            "PASSED"
-            if final_grade >= 75
-            else "FAILED"
-        )
+        remark = None
+
+        if target_grade is not None:
+
+            remark = (
+                "PASSED"
+                if final_grade >= target_grade
+                else "FAILED"
+            )
 
         # ============================================
         # 🎯 Target Grade Analysis
