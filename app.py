@@ -1,4 +1,8 @@
-from database import get_student_by_id, login_student, create_student
+from database import (
+    get_student_by_id,
+    login_student,
+    create_student,
+)
 import streamlit as st
 import pandas as pd
 
@@ -130,20 +134,47 @@ if st.button("Login"):
 
     else:
 
-        student = get_student(student_id)
+        existing_student = get_student_by_id(student_id)
 
-        if student is None:
+        if existing_student is None:
 
             create_student(student_id, student_name)
+
+            st.session_state.logged_in = True
+            st.session_state.student_id = student_id
+            st.session_state.student_name = student_name
 
             st.success("New student account created!")
 
         else:
 
-            st.success(f"Welcome back, {student['student_name']}!")
+            student = login_student(
+                student_id,
+                student_name
+            )
+
+            if student is None:
+
+                st.error(
+                    "Student ID exists, but the Student Name does not match."
+                )
+
+            else:
+
+                st.session_state.logged_in = True
+                st.session_state.student_id = student_id
+                st.session_state.student_name = student_name
+
+                st.success(
+                    f"Welcome back, {student_name}!"
+                )
 
 st.divider()
+if not st.session_state.logged_in:
 
+    st.info("Please log in to continue.")
+
+    st.stop()
 DEFAULT_SYLLABUS = pd.DataFrame(
     {
         "Component": [
