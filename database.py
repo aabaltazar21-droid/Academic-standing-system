@@ -1,5 +1,6 @@
 from config import supabase
 
+
 # ==========================================================
 # STUDENTS
 # ==========================================================
@@ -70,6 +71,37 @@ def get_subjects(student_id):
     return response.data
 
 
+def get_subject(subject_id):
+
+    response = (
+        supabase
+        .table("subjects")
+        .select("*")
+        .eq("id", subject_id)
+        .single()
+        .execute()
+    )
+
+    if response.data:
+        return response.data
+
+    return None
+
+
+def subject_exists(student_id, subject_name):
+
+    response = (
+        supabase
+        .table("subjects")
+        .select("id")
+        .eq("student_id", student_id)
+        .eq("subject_name", subject_name)
+        .execute()
+    )
+
+    return len(response.data) > 0
+
+
 def create_subject(student_id, subject_name):
 
     workspace = {
@@ -89,6 +121,21 @@ def create_subject(student_id, subject_name):
                 "workspace": workspace,
             }
         )
+        .execute()
+    )
+
+
+def rename_subject(subject_id, new_name):
+
+    return (
+        supabase
+        .table("subjects")
+        .update(
+            {
+                "subject_name": new_name
+            }
+        )
+        .eq("id", subject_id)
         .execute()
     )
 
@@ -122,7 +169,18 @@ def get_workspace(subject_id):
     if response.data is None:
         return None
 
-    return response.data.get("workspace")
+    workspace = response.data.get("workspace")
+
+    if workspace is None:
+
+        workspace = {
+            "syllabus": [],
+            "grades": [],
+            "target_grade": None,
+            "final_grade": None,
+        }
+
+    return workspace
 
 
 def save_workspace(
@@ -134,38 +192,72 @@ def save_workspace(
 ):
 
     workspace = {
-        "syllabus": syllabus_df.to_dict("records"),
-        "grades": grades_df.to_dict("records"),
+
+        "syllabus": syllabus_df.to_dict(
+            orient="records"
+        ),
+
+        "grades": grades_df.to_dict(
+            orient="records"
+        ),
+
         "target_grade": target_grade,
+
         "final_grade": final_grade,
+
     }
 
     return (
+
         supabase
+
         .table("subjects")
+
         .update(
             {
                 "workspace": workspace
             }
         )
+
         .eq("id", subject_id)
+
         .execute()
+
     )
 
 
 # ==========================================================
-# UTILITIES
+# RESET WORKSPACE
 # ==========================================================
 
-def subject_exists(student_id, subject_name):
+def clear_workspace(subject_id):
 
-    response = (
+    workspace = {
+
+        "syllabus": [],
+
+        "grades": [],
+
+        "target_grade": None,
+
+        "final_grade": None,
+
+    }
+
+    return (
+
         supabase
-        .table("subjects")
-        .select("*")
-        .eq("student_id", student_id)
-        .eq("subject_name", subject_name)
-        .execute()
-    )
 
-    return len(response.data) > 0
+        .table("subjects")
+
+        .update(
+            {
+                "workspace": workspace
+            }
+        )
+
+        .eq("id", subject_id)
+
+        .execute()
+
+    )
