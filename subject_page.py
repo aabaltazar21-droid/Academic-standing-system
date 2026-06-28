@@ -4,55 +4,56 @@ from database import (
     get_subjects,
     create_subject,
     delete_subject,
-    get_workspace,
     subject_exists,
 )
 
 
 def show_subject_page():
 
-    student_id = st.session_state.student_id
-
     st.title("📚 My Subjects")
+
     st.caption(
-        f"Logged in as **{st.session_state.student_name}** "
-        f"({student_id})"
+        f"Logged in as **{st.session_state.student_name}**"
     )
 
     st.divider()
 
-    # ======================================================
-    # SEARCH
-    # ======================================================
-
-    search = st.text_input(
-        "🔍 Search Subject",
-        placeholder="Type a subject name..."
-    ).strip().lower()
+    student_id = st.session_state.student_id
 
     subjects = get_subjects(student_id)
 
-    if search != "":
+    # ==============================================
+    # SEARCH
+    # ==============================================
+
+    search = st.text_input(
+        "🔍 Search Subject",
+        placeholder="Type subject name..."
+    ).strip().lower()
+
+    if search:
 
         subjects = [
+
             subject
+
             for subject in subjects
+
             if search in subject["subject_name"].lower()
+
         ]
 
-    # ======================================================
+    # ==============================================
     # SUBJECT LIST
-    # ======================================================
+    # ==============================================
 
     if len(subjects) == 0:
 
-        st.info(
-            "No subjects found."
-        )
+        st.info("No subjects found.")
 
     else:
 
-        st.subheader("Saved Subjects")
+        st.subheader("Subjects")
 
         for subject in subjects:
 
@@ -74,52 +75,11 @@ def show_subject_page():
                         use_container_width=True,
                     ):
 
-                        workspace = get_workspace(
-                            subject["id"]
-                        )
-
                         st.session_state.selected_subject = (
                             subject["id"]
                         )
 
-                        st.session_state.subject_name = (
-                            subject["subject_name"]
-                        )
-
-                        if workspace:
-
-                            import pandas as pd
-
-                            st.session_state.syllabus = (
-                                pd.DataFrame(
-                                    workspace.get(
-                                        "syllabus",
-                                        []
-                                    )
-                                )
-                            )
-
-                            st.session_state.saved_grades = (
-                                pd.DataFrame(
-                                    workspace.get(
-                                        "grades",
-                                        []
-                                    )
-                                )
-                            )
-
-                            st.session_state.target_grade = (
-                                workspace.get(
-                                    "target_grade",
-                                    None
-                                )
-                            )
-
-                        else:
-
-                            st.session_state.syllabus = None
-                            st.session_state.saved_grades = None
-                            st.session_state.target_grade = None
+                        st.session_state.workspace_loaded = False
 
                         st.rerun()
 
@@ -129,17 +89,15 @@ def show_subject_page():
                         use_container_width=True,
                     ):
 
-                        delete_subject(
-                            subject["id"]
-                        )
+                        delete_subject(subject["id"])
 
                         st.rerun()
 
     st.divider()
 
-    # ======================================================
+    # ==============================================
     # CREATE SUBJECT
-    # ======================================================
+    # ==============================================
 
     st.subheader("➕ Create Subject")
 
@@ -167,7 +125,7 @@ def show_subject_page():
         ):
 
             st.warning(
-                "A subject with that name already exists."
+                "Subject already exists."
             )
 
         else:
