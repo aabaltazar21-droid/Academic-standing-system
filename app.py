@@ -350,3 +350,18 @@ if st.button("Generate Report"):
 
     except Exception as e:
         st.error(str(e))
+
+def auto_save():
+    if st.session_state.selected_subject is None:
+        return
+
+    try:
+        save_workspace(
+            st.session_state.selected_subject,
+            st.session_state.syllabus,
+            grades_df,
+            target_grade_input,
+            0
+        )
+    except:
+        pass
