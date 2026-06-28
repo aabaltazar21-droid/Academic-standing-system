@@ -581,6 +581,18 @@ if st.button(
 
         st.success("Academic Report Generated!")
 
+if st.button("💾 Save Progress"):
+
+    save_workspace(
+        st.session_state.selected_subject,
+        st.session_state.syllabus,
+        grades_df,
+        target_grade,
+        final_grade
+    )
+
+    st.success("Progress saved successfully!")
+
         st.divider()
 
         col1, col2 = st.columns(2)
