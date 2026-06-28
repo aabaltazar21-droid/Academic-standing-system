@@ -541,6 +541,58 @@ if st.button(
             hide_index=True,
         )
 
+
+        # ============================================
+        # 🎯 Target Grade Analysis Report
+        # ============================================
+
+        if target_grade is not None:
+
+            st.divider()
+
+            st.subheader("🎯 Target Grade Analysis")
+
+            st.write(f"**Target Grade:** {target_grade:.2f}%")
+
+            if required_average is None:
+
+                st.info(
+                    "There are no remaining components."
+                )
+
+            elif required_average <= 0:
+
+                st.success(
+                    "🎉 Your current grade already meets or exceeds your target."
+                )
+
+            elif required_average <= 100:
+
+                st.info(
+                    f"You need to average **{required_average:.2f}%** "
+                    "on all remaining components."
+                )
+
+                st.write("Remaining components:")
+
+                for component in remaining_components:
+
+                    st.write(f"• {component}")
+
+            else:
+
+                st.error(
+                    f"You would need an average of **{required_average:.2f}%**, "
+                    "which is above 100%."
+                )
+
+                st.warning(
+                    "Even perfect scores are not enough. "
+                    "You would need additional bonus points or "
+                    "special consideration to reach your target."
+                )
+    
+
     except Exception as e:
 
         st.error(str(e))
