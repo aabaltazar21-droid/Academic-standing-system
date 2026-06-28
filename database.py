@@ -124,3 +124,19 @@ def save_workspace(subject_id, workspace):
         .eq("id", subject_id)
         .execute()
     )
+
+def get_workspace(subject_id):
+
+    response = (
+        supabase
+        .table("subjects")
+        .select("workspace")
+        .eq("id", subject_id)
+        .single()
+        .execute()
+    )
+
+    if response.data:
+        return response.data["workspace"]
+
+    return None
