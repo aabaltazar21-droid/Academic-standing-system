@@ -200,6 +200,31 @@ if st.button("⬅ Back to Subjects"):
 st.divider()
 
 # ==========================================================
+# CURRENT SUBJECT
+# ==========================================================
+
+from database import get_subjects
+
+subjects = get_subjects(st.session_state.student_id)
+
+current_subject = next(
+    (
+        subject
+        for subject in subjects
+        if subject["id"] == st.session_state.selected_subject
+    ),
+    None,
+)
+
+if current_subject:
+
+    st.title(f"📘 {current_subject['subject_name']}")
+
+    st.caption("Current Subject")
+
+    st.divider()
+
+# ==========================================================
 # GRADING PAGE
 # ==========================================================
 
